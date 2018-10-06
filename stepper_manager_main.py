@@ -20,6 +20,7 @@ from StepperMotor import *
 from pymata_aio.pymata3 import PyMata3
 from pymata_aio.constants import Constants
 
+import time
 
 class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 	def __init__(self, stepper_x = None, stepper_y = None, spectrometer = None):
@@ -51,14 +52,14 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 	def steppers_set_to_zero(self):
 		self.stepper_x.set_position_to_zero()
 		self.stepper_y.set_position_to_zero()
+		self.refresh_position()
 		
 	def refresh_position(self):
 		x = self.stepper_x.position
-		#y = self.stepper_y.position
-		y = 0
+		y = self.stepper_y.position
 		self.joystickXYLabel.setText('( {}, {} )'.format(str(x), str(y)))
 		self.currentXLabel.setText('X: ' + str(x))
-		#self.currentYLabel.setText('Y: ' + str(y))
+		self.currentYLabel.setText('Y: ' + str(y))
 		#self.redraw()
 		
 	def refresh_speed(self):
@@ -88,23 +89,44 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 #		self.moveDownButton.pressed.connect(lambda: self.stepper_y.go_while(-1, 
 #																	  self.speedSlider.value(), 
 #																	  self.moveDownButton.isDown))
+		self.heightEdit.textChanged.connect(self.refresh_set_dimentions)
+		self.widthEdit.textChanged.connect(self.refresh_set_dimentions)
+		self.resolutionEdit.textChanged.connect(self.refresh_set_dimentions)
 		self.speedSlider.valueChanged.connect(self.refresh_speed)
-		self.scanButton.clicked.connect(lambda: print(self.speedSlider.value()))
+		self.scanButton.clicked.connect(self.scan)
 		self.moveToButton.clicked.connect(self.move)
 		
+	def refresh_set_dimentions(self):
+		step = int(self.resolutionEdit.text())
+		n = int(self.heightEdit.text())
+		m = int(self.widthEdit.text())
+		self.setHeightLabel.setText(str(n*step))
+		self.setWidthLabel.setText(str(m*step))
+
 	def move(self):
 		target_x = self.targetXEdit.text()
 		target_y = self.targetYEdit.text()
+		
 		#TODO Bad input handling
 #		if not (target_x.strip().isdigit() and target_y.strip().isdigit()):
 #			print('integer values expected in "Target" field')
 #			return
 		target_x = int(target_x)
 		target_y = int(target_y)
+		self.move_to(target_x, target_y)
+
+	def move_to(self, target_x, target_y):
 		self.stepper_x.get_to(target_x, do_after_step = self.refresh_position)
 		self.stepper_y.get_to(target_y, do_after_step = self.refresh_position)
 	
-	
+	def scan(self):
+		step = int(self.resolutionEdit.text())
+		n = int(self.heightEdit.text())*step
+		m = int(self.widthEdit.text())*step
+		for i in range(0, n, step):
+			for j in range(0, m, step):
+				self.move_to(i, j)
+				time.sleep(0.3)
 #		self.pushButton_3.clicked.connect(lambda: self.switch(self.comboBox, self.comboBox_2))
 #		self.pushButton.clicked.connect(lambda: self.switch(self.comboBox_2, self.comboBox_3))
 #		self.pushButton_2.clicked.connect(lambda: self.switch(self.comboBox_3, self.comboBox))
@@ -144,12 +166,13 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 if __name__ == '__main__':
 	#board = PyMata3(arduino_wait = 5)
 
-	a = StepperDrive(board, 11, 9, 10)
+	a = StepperDrive(board, 11, 8, 9, 10)
+	b = StepperDrive(board, 2, 3, 4, 5)
 	if not QtWidgets.QApplication.instance():
 		app = QtWidgets.QApplication(sys.argv)
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	ex = Stepper_manager(a)
+	ex = Stepper_manager(a, b)
 	#sys.exit(app.exec_())
 	app.exec_()

@@ -23,7 +23,7 @@ class StepperDrive:
 	"""
 
 	
-	def __init__(self, board, enable_pin, step_pin, direction_pin, 
+	def __init__(self, board, enable_pin, sleep_pin, step_pin, direction_pin, 
 			  direction = 1, position = 0):
 		"""
 		Инициализация переменных, настройка пинов ардуино
@@ -38,6 +38,11 @@ class StepperDrive:
 		self.board.set_pin_mode( self.enable_pin, Constants.OUTPUT)
 		self.board.digital_write( self.enable_pin, self.ENABLE)
 						  
+		self.sleep_pin = sleep_pin
+		self.motor_awake = 1		
+		self.board.set_pin_mode( self.sleep_pin, Constants.OUTPUT)
+		self.board.digital_write( self.sleep_pin, 1)		
+		
 		self.step_pin = step_pin
 		self.board.set_pin_mode( self.step_pin, Constants.OUTPUT)
 		self.board.digital_write( self.step_pin, 0)		
@@ -62,6 +67,20 @@ class StepperDrive:
 		"""
 		self.motor_enabled = 0
 		self.board.digital_write( self.enable_pin, self.DISABLE)
+		
+	def awake(self):
+		"""
+
+		"""
+		self.motor_awake = 1
+		self.board.digital_write( self.sleep_pin, 1)
+		
+	def sleep(self):
+		"""
+
+		"""
+		self.motor_awake = 0
+		self.board.digital_write( self.sleep_pin, 0)
 
 	def step(self, number_of_steps, direction, stop_signal = lambda : False, 
 		  do_after_step = None):
