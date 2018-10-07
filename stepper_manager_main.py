@@ -3,6 +3,10 @@
 Created on Tue Oct  2 23:59:10 2018
 
 @author: aq
+
+To convert qt5 ui file to py use following command:
+pyuic5 stepper_manager_interface.ui > stepper_manager_interface.py
+
 """
 
 import sys
@@ -21,6 +25,8 @@ from pymata_aio.pymata3 import PyMata3
 from pymata_aio.constants import Constants
 
 import time
+import seabreeze.spectrometers as sb
+
 
 class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 	def __init__(self, stepper_x = None, stepper_y = None, spectrometer = None):
@@ -36,6 +42,8 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		#self.checkBox.stateChanged.connect(self.setcolor)		
 #		self.init_combos()
 		self.init_buttons()
+		self.refresh_speed()
+		#self.refresh_position()
 		self.show()
 		
 #	def pick_handle(self, event):
@@ -63,7 +71,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		#self.redraw()
 		
 	def refresh_speed(self):
-		self.speedLabel.setText('Speed: ' + str(self.speedSlider.value()) + u' steps/sec')
+		self.speedLabel.setText('Speed: ' + str(self.speedSlider.value()) + u' steps/click')
 		#self.redraw()
 		
 	def init_buttons(self):
@@ -89,19 +97,45 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 #		self.moveDownButton.pressed.connect(lambda: self.stepper_y.go_while(-1, 
 #																	  self.speedSlider.value(), 
 #																	  self.moveDownButton.isDown))
-		self.heightEdit.textChanged.connect(self.refresh_set_dimentions)
-		self.widthEdit.textChanged.connect(self.refresh_set_dimentions)
-		self.resolutionEdit.textChanged.connect(self.refresh_set_dimentions)
+		self.pointHeightEdit.textEdited.connect(self.refresh_step_dimentions)
+		self.pointWidthEdit.textEdited.connect(self.refresh_step_dimentions)
+		self.resolutionEdit.textEdited.connect(self.refresh_step_dimentions)
+		self.stepHeightEdit.textEdited.connect(self.refresh_point_dimentions)
+		self.stepWidthEdit.textEdited.connect(self.refresh_point_dimentions)
+		self.stepHeightEdit.editingFinished.connect(self.refresh_step_dimentions)
+		self.stepWidthEdit.editingFinished.connect(self.refresh_step_dimentions)		
+		
 		self.speedSlider.valueChanged.connect(self.refresh_speed)
 		self.scanButton.clicked.connect(self.scan)
 		self.moveToButton.clicked.connect(self.move)
 		
-	def refresh_set_dimentions(self):
-		step = int(self.resolutionEdit.text())
-		n = int(self.heightEdit.text())
-		m = int(self.widthEdit.text())
-		self.setHeightLabel.setText(str(n*step))
-		self.setWidthLabel.setText(str(m*step))
+		self.enableXCheckBox.stateChanged.connect(self.enable_motors)
+		self.enableYCheckBox.stateChanged.connect(self.enable_motors)
+		
+	def enable_motors(self):
+		if self.enableXCheckBox.isChecked():
+			self.stepper_x.enable()
+		else:
+			self.stepper_x.disable()
+		
+		if self.enableYCheckBox.isChecked():
+			self.stepper_y.enable()
+		else:
+			self.stepper_x.disable()
+
+	def refresh_step_dimentions(self):
+		res = int(self.resolutionEdit.text())
+		n = int(self.pointHeightEdit.text())
+		m = int(self.pointWidthEdit.text())
+		self.stepHeightEdit.setText(str(n*res))
+		self.stepWidthEdit.setText(str(m*res))
+		
+	def refresh_point_dimentions(self):
+		height = int(self.stepHeightEdit.text())
+		width = int(self.stepWidthEdit.text())
+		res = int(self.resolutionEdit.text())		
+		self.pointHeightEdit.setText(str(height//res))
+		self.pointWidthEdit.setText(str(width//res))
 
 	def move(self):
 		target_x = self.targetXEdit.text()
@@ -120,13 +154,37 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.stepper_y.get_to(target_y, do_after_step = self.refresh_position)
 	
 	def scan(self):
+		"""
+		TODO
+		add correct_dark_counts and non-linear correction options checkBoxes
+		"""
+		self.progressBar.setEnabled(True)
+		
+		integration_time = int(self.integrationTimeEdit.text())
+		self.spectrometer.integration_time_micros(integration_time)
+		wavelengths = self.spectrometer.wavelengths()
+		
+		time_appendix = time.strftime("%d_%b_%Y_%H:%M:%S", time.gmtime())
+		file = open('spec_scan_' + time_appendix + '.txt', 'w')
+		file.write('#first line - comment, second - resolution n, m, third - ' +
+			 'wavelengths, fourth and further - point coordinates i, j and spectra\n')
+		
 		step = int(self.resolutionEdit.text())
-		n = int(self.heightEdit.text())*step
-		m = int(self.widthEdit.text())*step
+		n = int(self.pointHeightEdit.text())*step
+		m = int(self.pointWidthEdit.text())*step
+		file.write(str(n) + ' ' + str(m) + '\n')
+		file.write(' '.join([str(x) for x in wavelengths]) + '\n')
 		for i in range(0, n, step):
 			for j in range(0, m, step):
-				self.move_to(i, j)
-				time.sleep(0.3)
+				self.progressBar.setProperty("value", int((i+1)*(j+1)/n/m) )
+				file.write(str(i) + ' ' + str(j) + ' ')
+				self.refresh_position()
+				self.move_to(j, i)
+				intensities = self.spectrometer.intensities(correct_dark_counts = True)
+				file.write(' '.join([str(x) for x in intensities]) + '\n')
+		file.close()
+		
+		
 #		self.pushButton_3.clicked.connect(lambda: self.switch(self.comboBox, self.comboBox_2))
 #		self.pushButton.clicked.connect(lambda: self.switch(self.comboBox_2, self.comboBox_3))
 #		self.pushButton_2.clicked.connect(lambda: self.switch(self.comboBox_3, self.comboBox))
@@ -166,13 +224,18 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 if __name__ == '__main__':
 	#board = PyMata3(arduino_wait = 5)
 
-	a = StepperDrive(board, 11, 8, 9, 10)
-	b = StepperDrive(board, 2, 3, 4, 5)
+#	a = StepperDrive(board, 11, 8, 9, 10)
+#	b = StepperDrive(board, 2, 3, 4, 5)
+	
+	devices = sb.list_devices()
+	print(devices)
+	spec = sb.Spectrometer(devices[0])
+	
 	if not QtWidgets.QApplication.instance():
 		app = QtWidgets.QApplication(sys.argv)
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	ex = Stepper_manager(a, b)
+	ex = Stepper_manager() #a, b)
 	#sys.exit(app.exec_())
 	app.exec_()

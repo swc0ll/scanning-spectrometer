@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>426</width>
-    <height>339</height>
+    <width>448</width>
+    <height>375</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -38,6 +38,12 @@
     <property name="singleStep">
      <number>1</number>
     </property>
+    <property name="value">
+     <number>100</number>
+    </property>
+    <property name="sliderPosition">
+     <number>100</number>
+    </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
     </property>
@@ -64,10 +70,10 @@
    <widget class="QLabel" name="speedLabel">
     <property name="geometry">
      <rect>
-      <x>70</x>
+      <x>30</x>
       <y>140</y>
-      <width>47</width>
-      <height>13</height>
+      <width>131</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="text">
@@ -132,9 +138,9 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>270</y>
-      <width>261</width>
+      <x>70</x>
+      <y>310</y>
+      <width>371</width>
       <height>23</height>
      </rect>
     </property>
@@ -193,6 +199,9 @@
       <height>20</height>
      </rect>
     </property>
+    <property name="text">
+     <string>0</string>
+    </property>
    </widget>
    <widget class="QLineEdit" name="targetYEdit">
     <property name="geometry">
@@ -203,32 +212,41 @@
       <height>20</height>
      </rect>
     </property>
+    <property name="text">
+     <string>0</string>
+    </property>
    </widget>
-   <widget class="QLineEdit" name="widthEdit">
+   <widget class="QLineEdit" name="pointWidthEdit">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>250</x>
       <y>130</y>
-      <width>81</width>
+      <width>51</width>
       <height>20</height>
      </rect>
     </property>
+    <property name="text">
+     <string>10</string>
+    </property>
    </widget>
-   <widget class="QLineEdit" name="heightEdit">
+   <widget class="QLineEdit" name="pointHeightEdit">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>250</x>
       <y>160</y>
-      <width>81</width>
+      <width>51</width>
       <height>20</height>
      </rect>
+    </property>
+    <property name="text">
+     <string>10</string>
     </property>
    </widget>
    <widget class="QPushButton" name="scanButton">
     <property name="geometry">
      <rect>
       <x>200</x>
-      <y>220</y>
+      <y>270</y>
       <width>141</width>
       <height>23</height>
      </rect>
@@ -269,9 +287,9 @@
    <widget class="QLineEdit" name="resolutionEdit">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>270</x>
       <y>190</y>
-      <width>81</width>
+      <width>51</width>
       <height>20</height>
      </rect>
     </property>
@@ -296,71 +314,39 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>270</y>
+      <y>310</y>
       <width>47</width>
       <height>13</height>
      </rect>
     </property>
     <property name="text">
-     <string>TextLabel</string>
+     <string>Прогресс</string>
     </property>
    </widget>
-   <widget class="QLabel" name="realWidthLabel">
+   <widget class="QLabel" name="pointsLabel">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>130</y>
-      <width>47</width>
-      <height>13</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="realHeightLabel">
-    <property name="geometry">
-     <rect>
-      <x>360</x>
-      <y>160</y>
-      <width>47</width>
-      <height>13</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TextLabel</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pauseButton">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>220</y>
+      <x>310</x>
+      <y>150</y>
       <width>31</width>
-      <height>23</height>
+      <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>❚❚ </string>
+     <string>точек</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="stopButton">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
+   <widget class="QLabel" name="stepsLabel">
     <property name="geometry">
      <rect>
-      <x>70</x>
-      <y>220</y>
-      <width>31</width>
-      <height>23</height>
+      <x>410</x>
+      <y>150</y>
+      <width>47</width>
+      <height>13</height>
      </rect>
     </property>
     <property name="text">
-     <string>◼</string>
+     <string>шагов</string>
     </property>
    </widget>
    <widget class="QPushButton" name="setToZeroButton">
@@ -376,13 +362,129 @@
      <string>Обнулить координаты</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="enableXCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>230</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Включить двигатель X</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="enableYCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>250</y>
+      <width>141</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Включить двигатель Y</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="stepWidthEdit">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>130</y>
+      <width>51</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>10</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="stepHeightEdit">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>160</y>
+      <width>51</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>10</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="zigzagRadioButton">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>220</y>
+      <width>82</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Зигзаг</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="spiralRadioButton">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>240</y>
+      <width>82</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Спираль</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="integrationTimeEdit">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>240</y>
+      <width>121</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>50000</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="integrationTimeLabel">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>220</y>
+      <width>121</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Время накопления (мкс)</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>426</width>
+     <width>448</width>
      <height>21</height>
     </rect>
    </property>
