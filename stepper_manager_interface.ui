@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Прорамма управления сканером</string>
+   <string>Программа управления сканером</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QSlider" name="speedSlider">

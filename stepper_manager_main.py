@@ -121,7 +121,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		if self.enableYCheckBox.isChecked():
 			self.stepper_y.enable()
 		else:
-			self.stepper_x.disable()
+			self.stepper_y.disable()
 
 	def refresh_step_dimentions(self):
 		res = int(self.resolutionEdit.text())
@@ -164,7 +164,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.spectrometer.integration_time_micros(integration_time)
 		wavelengths = self.spectrometer.wavelengths()
 		
-		time_appendix = time.strftime("%d_%b_%Y_%H:%M:%S", time.gmtime())
+		time_appendix = time.strftime("%d_%b_%Y_%H-%M-%S", time.gmtime())
 		file = open('spec_scan_' + time_appendix + '.txt', 'w')
 		file.write('#first line - comment, second - resolution n, m, third - ' +
 			 'wavelengths, fourth and further - point coordinates i, j and spectra\n')
@@ -176,14 +176,19 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		file.write(' '.join([str(x) for x in wavelengths]) + '\n')
 		for i in range(0, n, step):
 			for j in range(0, m, step):
-				self.progressBar.setProperty("value", int((i+1)*(j+1)/n/m) )
-				file.write(str(i) + ' ' + str(j) + ' ')
+				self.progressBar.setProperty("value", int( (i*n+(j+1)*step)/n/m*100) )
+				file.write(str(i//step) + ' ' + str(j//step) + ' ')
 				self.refresh_position()
 				self.move_to(j, i)
 				intensities = self.spectrometer.intensities(correct_dark_counts = True)
 				file.write(' '.join([str(x) for x in intensities]) + '\n')
 		file.close()
-		
+	
+	def closeEvent(self, event):
+		print('yooo')
+		self.spectrometer.close()
+		event.accept() # let the window close
+
 		
 #		self.pushButton_3.clicked.connect(lambda: self.switch(self.comboBox, self.comboBox_2))
 #		self.pushButton.clicked.connect(lambda: self.switch(self.comboBox_2, self.comboBox_3))
@@ -224,8 +229,8 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 if __name__ == '__main__':
 	#board = PyMata3(arduino_wait = 5)
 
-#	a = StepperDrive(board, 11, 8, 9, 10)
-#	b = StepperDrive(board, 2, 3, 4, 5)
+	a = StepperDrive(board, 11, 8, 9, 10)
+	b = StepperDrive(board, 2, 3, 4, 5)
 	
 	devices = sb.list_devices()
 	print(devices)
@@ -236,6 +241,7 @@ if __name__ == '__main__':
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	ex = Stepper_manager() #a, b)
+	ex = Stepper_manager(a, b, spec)
 	#sys.exit(app.exec_())
 	app.exec_()
+	

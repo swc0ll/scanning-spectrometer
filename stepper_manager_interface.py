@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Прорамма управления сканером"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Программа управления сканером"))
         self.joystickXYLabel.setText(_translate("MainWindow", "(x, y)"))
         self.speedLabel.setText(_translate("MainWindow", "Скорость"))
         self.moveUpButton.setText(_translate("MainWindow", "▲"))
