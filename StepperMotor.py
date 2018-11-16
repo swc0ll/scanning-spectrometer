@@ -24,7 +24,8 @@ class StepperDrive:
 
 	
 	def __init__(self, board, enable_pin, sleep_pin, step_pin, direction_pin, 
-			  direction = 1, position = 0):
+			  direction = 1, reverse_direction = False, position = 0, 
+			  speed_limit_steps_per_sec = None):
 		"""
 		Инициализация переменных, настройка пинов ардуино
 		"""
@@ -53,6 +54,8 @@ class StepperDrive:
 		self.board.digital_write( self.direction_pin, self.direction)
 		
 		self.position = position
+		self.speed_limit_sps = speed_limit_steps_per_sec
+		
 		
 	def enable(self):
 		"""
@@ -81,29 +84,54 @@ class StepperDrive:
 		"""
 		self.motor_awake = 0
 		self.board.digital_write( self.sleep_pin, 0)
-
-	def step(self, number_of_steps, direction, stop_signal = lambda : False, 
-		  do_after_step = None):
+	
+	def one_step(self, direction, do_after_step = None):
 		if direction != self.direction:
 			self.direction = direction
 			self.board.digital_write( self.direction_pin, self.direction > 0)
-		for i in range(number_of_steps):
-			if stop_signal():
-				return
-			self.board.digital_write( self.step_pin, 1)	
-			self.board.digital_write( self.step_pin, 0)
-			self.position += self.direction
-			if do_after_step:
-				do_after_step()
+		self.board.digital_write( self.step_pin, 1)	
+		self.board.digital_write( self.step_pin, 0)
+		self.position += self.direction
+		if do_after_step:
+			do_after_step()
+	
+	def step(self, number_of_steps, direction, stop_signal = lambda : False, 
+		  do_after_step = None):
 		
+		if direction != self.direction:
+			self.direction = direction
+			self.board.digital_write( self.direction_pin, self.direction > 0)
+			
+		if not self.speed_limit_sps:
+			for i in range(number_of_steps):
+				if stop_signal():
+					return
+				self.board.digital_write( self.step_pin, 1)	
+				self.board.digital_write( self.step_pin, 0)
+				self.position += self.direction
+				if do_after_step:
+					do_after_step()
+		else:
+			#TODO add stop signal
+			self.get_to(self.position+number_of_steps*direction)
+			if do_after_step:
+				do_after_step()		
+				
 	def get_to(self, target, stop_signal = lambda : False, do_after_step = None):
 		"""
 		target аналогично position измеряется в шагах
-		"""
-		shift = target - self.position
+		"""			
+		shift = target - self.position		
 		direction = (1, -1)[shift < 0]
 		shift = abs(shift)
-		self.step(shift, direction, stop_signal, do_after_step)
+		if not self.speed_limit_sps:
+			self.step(shift, direction, stop_signal, do_after_step)
+		else:
+			#TODO do after step
+			condition = lambda x: x != target
+			self.go_while(direction, self.speed_limit_sps, condition)
+			if do_after_step:
+				do_after_step()		
 		
 	def set_position_to_zero(self):
 		self.position = 0
@@ -117,7 +145,7 @@ class StepperDrive:
 		"""
 		interval = 1/steps_per_second
 		while condition(self.position):
-			self.step(1, direction)
+			self.one_step(direction)
 			self.board.sleep(interval)
 			
 	def go_for_some_time(self, direction, steps_per_second, period):

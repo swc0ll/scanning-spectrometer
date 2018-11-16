@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'stepper_manager_interface.ui'
 #
-# Created by: PyQt5 UI code generator 5.6
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(448, 375)
+        MainWindow.resize(444, 398)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -23,9 +23,9 @@ class Ui_MainWindow(object):
         self.speedSlider.setGeometry(QtCore.QRect(30, 160, 141, 22))
         self.speedSlider.setMinimum(1)
         self.speedSlider.setMaximum(1050)
-        self.speedSlider.setSingleStep(1)
-        self.speedSlider.setProperty("value", 100)
-        self.speedSlider.setSliderPosition(100)
+        self.speedSlider.setSingleStep(3)
+        self.speedSlider.setProperty("value", 10)
+        self.speedSlider.setSliderPosition(10)
         self.speedSlider.setOrientation(QtCore.Qt.Horizontal)
         self.speedSlider.setTickPosition(QtWidgets.QSlider.NoTicks)
         self.speedSlider.setObjectName("speedSlider")
@@ -50,7 +50,7 @@ class Ui_MainWindow(object):
         self.moveRightButton.setObjectName("moveRightButton")
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
         self.progressBar.setEnabled(False)
-        self.progressBar.setGeometry(QtCore.QRect(70, 310, 371, 23))
+        self.progressBar.setGeometry(QtCore.QRect(70, 330, 371, 23))
         self.progressBar.setProperty("value", 0)
         self.progressBar.setObjectName("progressBar")
         self.moveToButton = QtWidgets.QPushButton(self.centralwidget)
@@ -75,7 +75,7 @@ class Ui_MainWindow(object):
         self.pointHeightEdit.setGeometry(QtCore.QRect(250, 160, 51, 20))
         self.pointHeightEdit.setObjectName("pointHeightEdit")
         self.scanButton = QtWidgets.QPushButton(self.centralwidget)
-        self.scanButton.setGeometry(QtCore.QRect(200, 270, 141, 23))
+        self.scanButton.setGeometry(QtCore.QRect(200, 290, 141, 23))
         self.scanButton.setObjectName("scanButton")
         self.setHeightLabel = QtWidgets.QLabel(self.centralwidget)
         self.setHeightLabel.setGeometry(QtCore.QRect(200, 160, 47, 13))
@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
         self.setResolutionLabel.setGeometry(QtCore.QRect(200, 190, 61, 16))
         self.setResolutionLabel.setObjectName("setResolutionLabel")
         self.progressLabel = QtWidgets.QLabel(self.centralwidget)
-        self.progressLabel.setGeometry(QtCore.QRect(10, 310, 47, 13))
+        self.progressLabel.setGeometry(QtCore.QRect(10, 330, 47, 13))
         self.progressLabel.setObjectName("progressLabel")
         self.pointsLabel = QtWidgets.QLabel(self.centralwidget)
         self.pointsLabel.setGeometry(QtCore.QRect(310, 150, 31, 16))
@@ -130,9 +130,13 @@ class Ui_MainWindow(object):
         self.integrationTimeLabel = QtWidgets.QLabel(self.centralwidget)
         self.integrationTimeLabel.setGeometry(QtCore.QRect(310, 220, 121, 16))
         self.integrationTimeLabel.setObjectName("integrationTimeLabel")
+        self.virtualSpecCheckBox = QtWidgets.QCheckBox(self.centralwidget)
+        self.virtualSpecCheckBox.setGeometry(QtCore.QRect(210, 260, 171, 17))
+        self.virtualSpecCheckBox.setChecked(True)
+        self.virtualSpecCheckBox.setObjectName("virtualSpecCheckBox")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 448, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 444, 21))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -176,4 +180,5 @@ class Ui_MainWindow(object):
         self.spiralRadioButton.setText(_translate("MainWindow", "Спираль"))
         self.integrationTimeEdit.setText(_translate("MainWindow", "50000"))
         self.integrationTimeLabel.setText(_translate("MainWindow", "Время накопления (мкс)"))
+        self.virtualSpecCheckBox.setText(_translate("MainWindow", "Виртуальный спектрометр"))
 

@@ -29,9 +29,13 @@ import seabreeze.spectrometers as sb
 
 
 class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
-	def __init__(self, stepper_x = None, stepper_y = None, spectrometer = None):
+	def __init__(self, board, stop_pin, stepper_x = None, stepper_y = None, spectrometer = None):
 		super().__init__()
 		self.setupUi(self)
+		
+		self.board = board
+		self.stop_pin = stop_pin
+		self.board.set_pin_mode( self.stop_pin, Constants.INPUT)
 		
 		self.stepper_x = stepper_x
 		self.stepper_y = stepper_y
@@ -80,9 +84,9 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 																  do_after_step=self.refresh_position))
 		self.moveRightButton.pressed.connect(lambda: self.stepper_x.step(self.speedSlider.value(), -1, 
 																  do_after_step=self.refresh_position))
-		self.moveUpButton.pressed.connect(lambda: self.stepper_y.step(self.speedSlider.value(), 1, 
+		self.moveUpButton.pressed.connect(lambda: self.stepper_y.step(self.speedSlider.value(), -1, 
 																  do_after_step=self.refresh_position))
-		self.moveDownButton.pressed.connect(lambda: self.stepper_y.step(self.speedSlider.value(), -1, 
+		self.moveDownButton.pressed.connect(lambda: self.stepper_y.step(self.speedSlider.value(), 1, 
 																  do_after_step=self.refresh_position))
 		
 #		self.moveLeftButton.pressed.connect(lambda: self.stepper_x.go_while(1, 
@@ -113,6 +117,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.enableYCheckBox.stateChanged.connect(self.enable_motors)
 		
 	def enable_motors(self):
+		print(self.board.digital_read(self.stop_pin))
 		if self.enableXCheckBox.isChecked():
 			self.stepper_x.enable()
 		else:
@@ -164,8 +169,8 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.spectrometer.integration_time_micros(integration_time)
 		wavelengths = self.spectrometer.wavelengths()
 		
-		time_appendix = time.strftime("%d_%b_%Y_%H-%M-%S", time.gmtime())
-		file = open('spec_scan_' + time_appendix + '.txt', 'w')
+		time_appendix = time.strftime("%d_%m_%Y__%H-%M-%S", time.localtime())
+		file = open('specs/spec_scan_' + time_appendix + '.txt', 'w')
 		file.write('#first line - comment, second - resolution n, m, third - ' +
 			 'wavelengths, fourth and further - point coordinates i, j and spectra\n')
 		
@@ -173,75 +178,81 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		n = int(self.pointHeightEdit.text())*step
 		m = int(self.pointWidthEdit.text())*step
 		file.write(str(n) + ' ' + str(m) + '\n')
-		file.write(' '.join([str(x) for x in wavelengths]) + '\n')
+		file.write(' '.join(['{0:.2f}'.format(x) for x in wavelengths]) + '\n')
+		
+		start = time.time()
 		for i in range(0, n, step):
 			for j in range(0, m, step):
-				self.progressBar.setProperty("value", int( (i*n+(j+1)*step)/n/m*100) )
+				if self.board.digital_read(self.stop_pin):
+					file.close()
+					return
+				self.progressBar.setProperty("value", int( (i*m+j+step)/n/m*100) )
 				file.write(str(i//step) + ' ' + str(j//step) + ' ')
 				self.refresh_position()
 				self.move_to(j, i)
 				intensities = self.spectrometer.intensities(correct_dark_counts = True)
-				file.write(' '.join([str(x) for x in intensities]) + '\n')
+				file.write(' '.join(['{0:.2f}'.format(x) for x in intensities]) + '\n')
 		file.close()
-	
+		scan_time = time.time() - start
+		total_steps = (n//step)*(m//step)
+		print('Scanning time - ', scan_time, 'sec.', total_steps,
+		'steps. Speed - ', total_steps/scan_time, 'sps')
+		
 	def closeEvent(self, event):
+		self.stepper_x.disable()
+		self.stepper_y.disable()
 		print('yooo')
 		self.spectrometer.close()
 		event.accept() # let the window close
 
-		
-#		self.pushButton_3.clicked.connect(lambda: self.switch(self.comboBox, self.comboBox_2))
-#		self.pushButton.clicked.connect(lambda: self.switch(self.comboBox_2, self.comboBox_3))
-#		self.pushButton_2.clicked.connect(lambda: self.switch(self.comboBox_3, self.comboBox))
-		
-#	def switch(self, a, b):
-#		t = a.currentIndex()
-#		a.setCurrentIndex( b.currentIndex() )
-#		b.setCurrentIndex( t )
-#		self.redraw()
-		
-#	def setcolor(self):
-#		print(self.checkBox.checkState())
-#		op = self.db['SEM (РЭМ)'].copy()
-#		print(op, 1)
-#		if not self.checkBox.checkState():
-#			op = ~op.isnull()
-#		print(op)
-#		c_cold = min(self.db['mkm/h'])
-#		c_hot = max(self.db['mkm/h'])
-#		
-#		for i in range(0, len(self.db['mkm/h'])):
-#			print(i)
-#			self.colors[i] = [0, (self.db['mkm/h'].values[i] - c_cold)/(c_hot - c_cold), 0, 1*op.values[i]]
-#		print(self.colors)
-#		self.redraw()
-#		
-#	def redraw(self):		
-#		self.sc.compute_figure(self.db[self.comboBox.currentText()], 
-#						 self.db[self.comboBox_2.currentText()], 
-#						 self.db[self.comboBox_3.currentText()], 
-#						 self.colors,
-#						 self.comboBox.currentText(), 
-#						 self.comboBox_2.currentText(), 
-#						 self.comboBox_3.currentText())
-		
 
-if __name__ == '__main__':
-	#board = PyMata3(arduino_wait = 5)
 
-	a = StepperDrive(board, 11, 8, 9, 10)
-	b = StepperDrive(board, 2, 3, 4, 5)
-	
+class VirtualSpec():
+	def __init__(self):
+		self.intensities_const = [1, 2, 3]
+		self.wavelengths_const = [4, 5, 6]
+		self.int_time = 0.1
+	def close(self):
+		pass
+	def intensities(self, *args, **kwargs):
+		time.sleep(self.int_time)
+		return self.intensities_const
+	def wavelengths(self, *args, **kwargs):
+		return self.wavelengths_const
+	def integration_time_micros(self, time_micros, *args, **kwargs):
+		self.int_time = time_micros/10e6
+
+def spec_init():
 	devices = sb.list_devices()
 	print(devices)
 	spec = sb.Spectrometer(devices[0])
+	return spec
+
+if __name__ == '__main__':
+	
+	if not 'board' in locals():
+		board = PyMata3(arduino_wait = 5)
+
+	a = StepperDrive(board, 11, 8, 9, 10, speed_limit_steps_per_sec = 30)
+	b = StepperDrive(board, 2, 3, 4, 5)
+	
+	if 'virtual' in sys.argv:
+		print('virtual spectrometer is being used')
+		sys.argv.remove('virtual')
+		spec = VirtualSpec()
+	elif 'virt_spec' in locals():
+		spec = VirtualSpec()
+	else:
+		devices = sb.list_devices()
+		print(devices)
+		spec = sb.Spectrometer(devices[0])
 	
 	if not QtWidgets.QApplication.instance():
 		app = QtWidgets.QApplication(sys.argv)
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	ex = Stepper_manager(a, b, spec)
+	ex = Stepper_manager(board, 6, b, a, spec)
 	#sys.exit(app.exec_())
 	app.exec_()
 	
