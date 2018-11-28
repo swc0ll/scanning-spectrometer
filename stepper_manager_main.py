@@ -29,7 +29,9 @@ import seabreeze.spectrometers as sb
 
 
 class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
-	def __init__(self, board, stop_pin, stepper_x = None, stepper_y = None, spectrometer = None):
+
+	def __init__(self, board, stop_pin, stepper_x, stepper_y, 
+			  virt_spec, real_spec_init):
 		super().__init__()
 		self.setupUi(self)
 		
@@ -39,7 +41,10 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		
 		self.stepper_x = stepper_x
 		self.stepper_y = stepper_y
-		self.spectrometer = spectrometer
+		
+		self.virt_spec = virt_spec
+		self.real_spec_init = real_spec_init
+		self.spectrometer = self.virt_spec
 		
 		#self.colors = [[0, 1, 0, 0.5] for x in self.db['mkm/h']]
 		
@@ -103,11 +108,11 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 #																	  self.moveDownButton.isDown))
 		self.pointHeightEdit.textEdited.connect(self.refresh_step_dimentions)
 		self.pointWidthEdit.textEdited.connect(self.refresh_step_dimentions)
-		self.resolutionEdit.textEdited.connect(self.refresh_step_dimentions)
+		self.resolutionEdit.textEdited.connect(self.refresh_point_dimentions)
 		self.stepHeightEdit.textEdited.connect(self.refresh_point_dimentions)
 		self.stepWidthEdit.textEdited.connect(self.refresh_point_dimentions)
-		self.stepHeightEdit.editingFinished.connect(self.refresh_step_dimentions)
-		self.stepWidthEdit.editingFinished.connect(self.refresh_step_dimentions)		
+		self.stepHeightEdit.editingFinished.connect(self.refresh_point_dimentions)
+		self.stepWidthEdit.editingFinished.connect(self.refresh_point_dimentions)		
 		
 		self.speedSlider.valueChanged.connect(self.refresh_speed)
 		self.scanButton.clicked.connect(self.scan)
@@ -116,6 +121,15 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.enableXCheckBox.stateChanged.connect(self.enable_motors)
 		self.enableYCheckBox.stateChanged.connect(self.enable_motors)
 		
+		self.virtualSpecCheckBox.stateChanged.connect(self.change_spec)
+	
+	def change_spec(self):
+		self.spectrometer.close()
+		if self.virtualSpecCheckBox.isChecked():
+			self.spectrometer = self.virt_spec
+		else:
+			self.spectrometer = self.real_spec_init()
+			
 	def enable_motors(self):
 		print(self.board.digital_read(self.stop_pin))
 		if self.enableXCheckBox.isChecked():
@@ -134,6 +148,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		m = int(self.pointWidthEdit.text())
 		self.stepHeightEdit.setText(str(n*res))
 		self.stepWidthEdit.setText(str(m*res))
+		self.refresh_scan_time()
 		
 	def refresh_point_dimentions(self):
 		height = int(self.stepHeightEdit.text())
@@ -141,6 +156,15 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		res = int(self.resolutionEdit.text())		
 		self.pointHeightEdit.setText(str(height//res))
 		self.pointWidthEdit.setText(str(width//res))
+		self.refresh_scan_time()
+		
+	def refresh_scan_time(self):
+		n = int(self.pointHeightEdit.text())
+		m = int(self.pointWidthEdit.text())
+		scan_to_average = int(self.scanToAverageEdit.text())
+		integration_time = int(self.integrationTimeEdit.text())
+		scan_time = round(n*m*scan_to_average*integration_time / 1e6 /60)
+		self.scanButton.setText('Scan ~' + str(scan_time) +'min')
 
 	def move(self):
 		target_x = self.targetXEdit.text()
@@ -165,19 +189,23 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		"""
 		self.progressBar.setEnabled(True)
 		
+		scan_to_average = int(self.scanToAverageEdit.text())
 		integration_time = int(self.integrationTimeEdit.text())
 		self.spectrometer.integration_time_micros(integration_time)
 		wavelengths = self.spectrometer.wavelengths()
+		step = int(self.resolutionEdit.text())		
 		
 		time_appendix = time.strftime("%d_%m_%Y__%H-%M-%S", time.localtime())
 		file = open('specs/spec_scan_' + time_appendix + '.txt', 'w')
 		file.write('#first line - comment, second - resolution n, m, third - ' +
-			 'wavelengths, fourth and further - point coordinates i, j and spectra\n')
+			 'wavelengths, fourth and further - point coordinates i, j and spectra' +
+			 'Integration time us: ' + str(integration_time) + 'Step - ' +
+			 str(step) + '\n')
 		
-		step = int(self.resolutionEdit.text())
+
 		n = int(self.pointHeightEdit.text())*step
 		m = int(self.pointWidthEdit.text())*step
-		file.write(str(n) + ' ' + str(m) + '\n')
+		file.write(str(n//step) + ' ' + str(m//step) + '\n')
 		file.write(' '.join(['{0:.2f}'.format(x) for x in wavelengths]) + '\n')
 		
 		start = time.time()
@@ -190,7 +218,11 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 				file.write(str(i//step) + ' ' + str(j//step) + ' ')
 				self.refresh_position()
 				self.move_to(j, i)
-				intensities = self.spectrometer.intensities(correct_dark_counts = True)
+				
+				intensities = np.zeros_like(wavelengths)
+				for k in range(scan_to_average):
+					intensities += self.spectrometer.intensities(correct_dark_counts = True)
+				intensities /= scan_to_average
 				file.write(' '.join(['{0:.2f}'.format(x) for x in intensities]) + '\n')
 		file.close()
 		scan_time = time.time() - start
@@ -202,6 +234,8 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		self.stepper_x.disable()
 		self.stepper_y.disable()
 		print('yooo')
+#		if self.spectrometer != self.virt_spec:
+#			self.change_spec()
 		self.spectrometer.close()
 		event.accept() # let the window close
 
@@ -236,23 +270,25 @@ if __name__ == '__main__':
 	a = StepperDrive(board, 11, 8, 9, 10, speed_limit_steps_per_sec = 30)
 	b = StepperDrive(board, 2, 3, 4, 5)
 	
-	if 'virtual' in sys.argv:
-		print('virtual spectrometer is being used')
-		sys.argv.remove('virtual')
-		spec = VirtualSpec()
-	elif 'virt_spec' in locals():
-		spec = VirtualSpec()
-	else:
-		devices = sb.list_devices()
-		print(devices)
-		spec = sb.Spectrometer(devices[0])
+#	if 'virtual' in sys.argv:
+#		print('virtual spectrometer is being used')
+#		sys.argv.remove('virtual')
+#		spec = VirtualSpec()
+#	elif 'virt_spec' in locals():
+#		spec = VirtualSpec()
+#	else:
+#		devices = sb.list_devices()
+#		print(devices)
+#		spec = sb.Spectrometer(devices[0])
+	
+	virt_spec = VirtualSpec()
 	
 	if not QtWidgets.QApplication.instance():
 		app = QtWidgets.QApplication(sys.argv)
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	ex = Stepper_manager(board, 6, b, a, spec)
+	ex = Stepper_manager(board, 6, b, a, virt_spec, spec_init)
 	#sys.exit(app.exec_())
 	app.exec_()
 	

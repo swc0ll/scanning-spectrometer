@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Mon Nov 26 12:57:40 2018
+
+@author: aq
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Sat Sep 29 17:19:53 2018
 
 @author: aq
@@ -13,7 +20,8 @@ devices = sb.list_devices()
 print(devices)
 spec = sb.Spectrometer(devices[0])
 #время накопления
-spec.integration_time_micros(0.5e6)
+integration_time = 0.5e6
+spec.integration_time_micros(integration_time)
 wavelengths = spec.wavelengths()
 
 list_of_intensities = []
@@ -29,11 +37,9 @@ print(dt)
 mean_int = sum(list_of_intensities)/len(list_of_intensities)
 err = np.zeros(mean_int.shape)
 
-f = open('zero_count.txt', 'r')
-s = f.readline()
+f = open('zero_count_' + str(integration_time) + 'us.txt', 'w')
+f.write(' '.join([str(x) for x in mean_int]))
 f.close()
-zero_count = np.array([float(x) for x in s.split()])
-
 for i in range(n):
 	err += (mean_int - list_of_intensities[i])**2
 	err /= n
@@ -44,4 +50,3 @@ for i in range(n):
 plt.plot(wavelengths, err)
 
 spec.close()
-
