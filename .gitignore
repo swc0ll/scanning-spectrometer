@@ -1,0 +1,10 @@
+specs
+! mean_vs_single.py
+! spec_viewer.py
+! wl_to_rgb.py
+
+temp specs
+specs (copy)
+__pycache__
+stepper_manager_interface.pyc
+*.pyc

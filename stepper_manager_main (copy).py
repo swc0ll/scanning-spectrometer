@@ -19,14 +19,13 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import pandas as pd
 import stepper_manager_interface as ui
-from datetime import datetime
 
 from StepperMotor import *
 from pymata_aio.pymata3 import PyMata3
 from pymata_aio.constants import Constants
 
 import time
-#import seabreeze.spectrometers as sb
+import seabreeze.spectrometers as sb
 
 
 class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
@@ -135,7 +134,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 			self.spectrometer = self.real_spec_init()
 			
 	def enable_motors(self):
-		print(self.board.digital_read(self.stop_pin))  #why?
+		print(self.board.digital_read(self.stop_pin))
 		if self.enableXCheckBox.isChecked():
 			self.stepper_x.enable()
 		else:
@@ -199,7 +198,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		wavelengths = self.spectrometer.wavelengths()
 		step = int(self.resolutionEdit.text())		
 		
-		time_appendix = time.strftime("%Y_%m_%d__%H-%M-%S", time.localtime())
+		time_appendix = time.strftime("%d_%m_%Y__%H-%M-%S", time.localtime())
 		file = open('specs/spec_scan_' + time_appendix + '.txt', 'w')
 		file.write('#first line - comment, second - resolution n, m, third - ' +
 			 'wavelengths, fourth and further - point coordinates i, j and spectra' +
@@ -215,7 +214,7 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 		start = time.time()
 		for i in range(0, n, step):
 			for j in range(0, m, step):
-				if not self.board.digital_read(self.stop_pin):
+				if self.board.digital_read(self.stop_pin):
 					file.close()
 					return
 				self.progressBar.setProperty("value", int( (i*m+j+step)/n/m*100) )
@@ -223,16 +222,11 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 				self.refresh_position()
 				self.move_to(j, i)
 				
-				if not self.virtualSpecCheckBox.isChecked():
-					intensities = np.zeros_like(wavelengths)
-					for k in range(scan_to_average):
-						intensities += self.spectrometer.intensities(correct_dark_counts = False)
-					intensities /= scan_to_average
-					file.write(' '.join(['{0:.2f}'.format(x) for x in intensities]) + '\n')
-				else:
-					time.sleep(integration_time/1e6)
-					file.write(datetime.now().strftime("%H:%M:%S.%f") + '\n')
-				
+				intensities = np.zeros_like(wavelengths)
+				for k in range(scan_to_average):
+					intensities += self.spectrometer.intensities(correct_dark_counts = False)
+				intensities /= scan_to_average
+				file.write(' '.join(['{0:.2f}'.format(x) for x in intensities]) + '\n')
 		file.close()
 		scan_time = time.time() - start
 		total_steps = (n//step)*(m//step)
@@ -246,16 +240,15 @@ class Stepper_manager(ui.Ui_MainWindow, QtWidgets.QMainWindow):
 #		if self.spectrometer != self.virt_spec:
 #			self.change_spec()
 		self.spectrometer.close()
-		self.board.shutdown()
 		event.accept() # let the window close
 
 
 
 class VirtualSpec():
 	def __init__(self):
-		self.intensities_const = np.array([1, 2, 3])
-		self.wavelengths_const = np.array([4, 5, 6])
-		self.int_time = 0.5
+		self.intensities_const = [1, 2, 3]
+		self.wavelengths_const = [4, 5, 6]
+		self.int_time = 0.1
 	def close(self):
 		pass
 	def intensities(self, *args, **kwargs):
@@ -266,19 +259,19 @@ class VirtualSpec():
 	def integration_time_micros(self, time_micros, *args, **kwargs):
 		self.int_time = time_micros/10e6
 
-#def spec_init():
-#	devices = sb.list_devices()
-#	print(devices)
-#	spec = sb.Spectrometer(devices[0])
-#	return spec
+def spec_init():
+	devices = sb.list_devices()
+	print(devices)
+	spec = sb.Spectrometer(devices[0])
+	return spec
 
 if __name__ == '__main__':
 	
-	#if not 'board' in locals():
-	board = PyMata3(arduino_wait = 5, c)
+	if not 'board' in locals():
+		board = PyMata3(arduino_wait = 5)
 
-	a = StepperDrive(board, 11, 10, 9, 8, speed_limit_steps_per_sec = 30)
-	b = StepperDrive(board, 5, 4, 3, 2)
+	a = StepperDrive(board, 11, 8, 9, 10, speed_limit_steps_per_sec = 30)
+	b = StepperDrive(board, 2, 3, 4, 5)
 	
 #	if 'virtual' in sys.argv:
 #		print('virtual spectrometer is being used')
@@ -292,15 +285,13 @@ if __name__ == '__main__':
 #		spec = sb.Spectrometer(devices[0])
 	
 	virt_spec = VirtualSpec()
-	virt_spec2 = VirtualSpec()
 	
 	if not QtWidgets.QApplication.instance():
 		app = QtWidgets.QApplication(sys.argv)
 	else:
 		app = QtWidgets.QApplication.instance() 
 	#app = QApplication(sys.argv)
-	#ex = Stepper_manager(board, 6, b, a, virt_spec, spec_init)
-	ex = Stepper_manager(board, 6, b, a, virt_spec, virt_spec2)
+	ex = Stepper_manager(board, 6, b, a, virt_spec, spec_init)
 	#sys.exit(app.exec_())
 	app.exec_()
 	

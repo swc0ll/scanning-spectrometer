@@ -20,33 +20,36 @@ devices = sb.list_devices()
 print(devices)
 spec = sb.Spectrometer(devices[0])
 #время накопления
-integration_time = 0.5e6
+integration_time = 0.05e6
 spec.integration_time_micros(integration_time)
 wavelengths = spec.wavelengths()
 
 list_of_intensities = []
 #измерение времени между последовательными накоплениями спектра
 #минимум - 5 мс 
-n = 20
+n = 200
 start = time.time()
 for i in range(n):
-	list_of_intensities.append(spec.intensities(correct_dark_counts = True))
+	list_of_intensities.append(spec.intensities(correct_dark_counts = False))
 dt = (time.time() - start)/n
 print(dt)
 
 mean_int = sum(list_of_intensities)/len(list_of_intensities)
 err = np.zeros(mean_int.shape)
 
-f = open('zero_count_' + str(integration_time) + 'us.txt', 'w')
+f = open('specs/zero_count_' + str(integration_time) + 'us_1512_no_correct.txt', 'w')
 f.write(' '.join([str(x) for x in mean_int]))
 f.close()
 for i in range(n):
 	err += (mean_int - list_of_intensities[i])**2
 	err /= n
 	
-for i in range(n):
-	plt.plot(wavelengths, list_of_intensities[i])
-	
+#for i in range(n):
+#	plt.plot(wavelengths, list_of_intensities[i])
+
+plt.plot(wavelengths, mean_int)
+plt.plot(wavelengths, list_of_intensities[0])
 plt.plot(wavelengths, err)
 
+print('done')
 spec.close()
