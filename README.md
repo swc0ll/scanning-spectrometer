@@ -2,7 +2,7 @@
 
 This desktop application helps to conduct spatially resolved in situ diagnostics of plasma. Plasma is used for carbon materials deposition (e.g. see [this](https://github.com/IRebri/pyCVD/))
 
-# Schematics
+## Schematics
 ![board schematics](misc/board_schematics.svg)
 
 ## Citation
