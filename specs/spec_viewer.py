@@ -23,17 +23,21 @@ def draw_map(file_name = 'spec_scan_16_11_2018__18-22-33.txt',
 			 substract_zero = False, zero_count_file = 'zero_count.txt', k= 1,
 			 draw = True):
 	zero_count = np.zeros(3648, )
-	if substract_zero:
-		f = open(zero_count_file, 'r')
-		s = f.readline()
-		f.close()
-		zero_count = np.array([float(x) for x in s.split()])/k
+
 	
 	start = time.time()
 	f = open(file_name, 'r')
 	print(f.readline())
 	n, m = [int(x) for x in f.readline().split()]
 	wavelengths = np.array([float(x) for x in f.readline().split()])
+	n_wl = wavelengths.size
+	print(n_wl)
+	zero_count = np.zeros(n_wl, )
+	if substract_zero:
+		f_sub_zero = open(zero_count_file, 'r')
+		s = f_sub_zero.readline()
+		f_sub_zero.close()
+		zero_count = np.array([float(x) for x in s.split()])/k
 	spec = np.zeros((n, m, wavelengths.size))
 	try:
 		for i in range(n):
@@ -47,6 +51,10 @@ def draw_map(file_name = 'spec_scan_16_11_2018__18-22-33.txt',
 	last_i = i - 1
 	
 	print(time.time() - start)
+	
+	#rotate image
+	n, m = m, n
+	spec = np.swapaxes(spec, 0, 1)
 	
 	img = np.zeros((n,m))
 	for i in range(n):
